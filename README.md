@@ -80,3 +80,25 @@ ANTHROPIC_API_KEY=sk-ant-...
 ## License
 
 MIT
+
+---
+
+## Français
+
+**LLM API Playground** est un environnement de test interactif basé sur le web pour comparer des APIs de modèles de langage (LLM). Il prend en charge GPT-4, Claude 3, Llama 3 et Mistral dans une seule interface, avec des curseurs de réglage des paramètres (température, top-p, tokens max), des templates de prompts système prédéfinis et l'export de l'historique des conversations en JSON.
+
+### Installation
+
+```bash
+npm install
+npm run dev
+```
+
+### Utilisation
+
+Créez un fichier `.env.local` avec vos clés API, puis ouvrez [http://localhost:3000](http://localhost:3000). Sélectionnez un modèle, ajustez les paramètres, rédigez votre message et observez les réponses en temps réel.
+
+```env
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
