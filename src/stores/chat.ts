@@ -1,9 +1,16 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { Message, ChatConfig, Preset } from "@/lib/types";
+
+export interface ApiKeys {
+  openai: string;
+  anthropic: string;
+}
 
 interface ChatState {
   messages: Message[];
   config: ChatConfig;
+  apiKeys: ApiKeys;
   isStreaming: boolean;
   activePreset: string | null;
   addMessage: (role: Message["role"], content: string) => void;
@@ -13,6 +20,8 @@ interface ChatState {
   setConfig: (partial: Partial<ChatConfig>) => void;
   setStreaming: (streaming: boolean) => void;
   loadPreset: (preset: Preset) => void;
+  setApiKey: (provider: keyof ApiKeys, key: string) => void;
+  getApiKeyForModel: (model: string) => string;
 }
 
 const defaultConfig: ChatConfig = {
@@ -25,6 +34,11 @@ const defaultConfig: ChatConfig = {
   presencePenalty: 0.0,
   stopSequences: [],
   stream: true,
+};
+
+const defaultApiKeys: ApiKeys = {
+  openai: "",
+  anthropic: "",
 };
 
 export const PRESETS: Preset[] = [
@@ -58,48 +72,78 @@ function generateId(): string {
   return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
-  messages: [],
-  config: { ...defaultConfig },
-  isStreaming: false,
-  activePreset: null,
+function getProviderForModel(model: string): keyof ApiKeys | null {
+  if (model.startsWith("gpt-") || model.startsWith("o1") || model.startsWith("o3")) return "openai";
+  if (model.startsWith("claude-")) return "anthropic";
+  return null;
+}
 
-  addMessage: (role, content) =>
-    set((state) => ({
-      messages: [
-        ...state.messages,
-        {
-          id: generateId(),
-          role,
-          content,
-          timestamp: Date.now(),
-          model: role === "assistant" ? state.config.model : undefined,
-        },
-      ],
-    })),
+export const useChatStore = create<ChatState>()(
+  persist(
+    (set, get) => ({
+      messages: [],
+      config: { ...defaultConfig },
+      apiKeys: { ...defaultApiKeys },
+      isStreaming: false,
+      activePreset: null,
 
-  updateLastMessage: (content) =>
-    set((state) => {
-      const updated = [...state.messages];
-      if (updated.length > 0) {
-        updated[updated.length - 1] = { ...updated[updated.length - 1], content };
-      }
-      return { messages: updated };
+      addMessage: (role, content) =>
+        set((state) => ({
+          messages: [
+            ...state.messages,
+            {
+              id: generateId(),
+              role,
+              content,
+              timestamp: Date.now(),
+              model: role === "assistant" ? state.config.model : undefined,
+            },
+          ],
+        })),
+
+      updateLastMessage: (content) =>
+        set((state) => {
+          const updated = [...state.messages];
+          if (updated.length > 0) {
+            updated[updated.length - 1] = { ...updated[updated.length - 1], content };
+          }
+          return { messages: updated };
+        }),
+
+      clearChat: () => set({ messages: [] }),
+
+      setModel: (model) =>
+        set((state) => ({ config: { ...state.config, model }, activePreset: null })),
+
+      setConfig: (partial) =>
+        set((state) => ({ config: { ...state.config, ...partial }, activePreset: null })),
+
+      setStreaming: (isStreaming) => set({ isStreaming }),
+
+      loadPreset: (preset) =>
+        set((state) => ({
+          config: { ...state.config, ...preset.config },
+          activePreset: preset.id,
+        })),
+
+      setApiKey: (provider, key) =>
+        set((state) => ({
+          apiKeys: { ...state.apiKeys, [provider]: key },
+        })),
+
+      getApiKeyForModel: (model) => {
+        const provider = getProviderForModel(model);
+        if (!provider) return "";
+        return get().apiKeys[provider] ?? "";
+      },
     }),
-
-  clearChat: () => set({ messages: [] }),
-
-  setModel: (model) =>
-    set((state) => ({ config: { ...state.config, model }, activePreset: null })),
-
-  setConfig: (partial) =>
-    set((state) => ({ config: { ...state.config, ...partial }, activePreset: null })),
-
-  setStreaming: (isStreaming) => set({ isStreaming }),
-
-  loadPreset: (preset) =>
-    set((state) => ({
-      config: { ...state.config, ...preset.config },
-      activePreset: preset.id,
-    })),
-}));
+    {
+      name: "llm-playground-storage",
+      partialize: (state) => ({
+        config: state.config,
+        apiKeys: state.apiKeys,
+        activePreset: state.activePreset,
+      }),
+    }
+  )
+);
