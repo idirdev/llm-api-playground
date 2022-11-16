@@ -97,3 +97,52 @@ npm test
 ## License
 
 MIT
+
+---
+
+## Documentation en francais
+
+### Description
+LLM API Playground est une application web interactive pour tester les API de LLM. Selectionnez un modele, entrez votre cle API, ajustez les parametres et obtenez des completions en streaming en temps reel depuis OpenAI ou Anthropic.
+
+> **Les cles API sont necessaires.** Ce playground appelle les fournisseurs directement depuis votre navigateur via une route proxy Next.js. Vous devez fournir votre propre cle API. Les cles sont stockees uniquement dans le `localStorage` — elles ne sont jamais envoyees a un serveur autre que celui du fournisseur.
+
+### Fonctionnalites
+
+
+- **Completions en streaming** -- SSE via `/api/chat`, proxifie vers OpenAI ou Anthropic
+- **Multi-modeles** -- GPT-4 Turbo, GPT-4o (OpenAI) et Claude 3 Opus/Sonnet (Anthropic)
+- **Cles API par fournisseur** -- entrez votre cle dans le panneau Config ; stockee uniquement dans votre navigateur
+- **Stop de generation** -- annulez un stream en cours avec le bouton Stop
+- **Reglage des parametres** -- Temperature, top-p, max tokens, penalite de frequence
+- **Templates de prompt systeme** -- templates pre-construits pour les cas d'usage courants
+- **Export de conversations** -- telechargez l'historique du chat en JSON
+
+### Installation
+
+```bash
+npm install
+npm run dev
+```
+
+Ouvrez [http://localhost:3000](http://localhost:3000) dans votre navigateur.
+
+### Utilisation
+
+1. Ouvrez le panneau **Config** (affiche par defaut dans la barre laterale gauche)
+2. Entrez votre **cle API OpenAI** (`sk-...`) et/ou votre **cle API Anthropic** (`sk-ant-...`)
+3. Selectionnez un modele
+4. Tapez un message et appuyez sur **Entree** — les completions s'affichent en streaming token par token
+5. Utilisez le bouton **Stop** pour annuler la generation en cours
+
+### Tests
+
+```bash
+npm test
+```
+
+29 tests sur 2 fichiers. Les appels API externes sont simules — aucune cle API reelle n'est necessaire.
+
+### Licence
+
+MIT
